@@ -16,11 +16,13 @@ import static org.lwjgl.opengl.GL11.glTexParameteri;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import javax.imageio.ImageIO;
 
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 /**
@@ -115,12 +117,21 @@ public class Texture {
 	}
 	
 	/**
-	 * Creates a texture with the given file name. File must reside in jar.
+	 * Creates a texture given file inside jar
 	 * @param name
 	 */
 	public Texture(String name) {
 		id = glGenTextures();
 		update(name);
+	}
+	
+	/**
+	 * Creates a texture using given file
+	 * @param file
+	 */
+	public Texture(File file) {
+		id = glGenTextures();
+		update(file);
 	}
 	
 	/**
@@ -132,7 +143,7 @@ public class Texture {
 	}
 	
 	/**
-	 * Update the texture from a file
+	 * Update the texture from a file inside the jar
 	 * @param name of file
 	 */
 	public void update(String name) {
@@ -141,8 +152,28 @@ public class Texture {
 	        buf = in;
 			update(in);
 		} catch (IOException | IllegalArgumentException e) {
-			System.out.println("File " + name + " not found");
+			System.out.println("File " + name + " not found, or an error occurred");
 			update(genNotFoundBufIMG());
+		}
+	}
+	
+	/**
+	 * Update the texture from a file not inside the jar
+	 * @param file image file
+	 */
+	public void update(File file) {
+		if(file.exists()) {
+			try {
+				BufferedImage in = ImageIO.read(file);
+		        buf = in;
+				update(in);
+			} catch (IOException | IllegalArgumentException e) {
+				System.out.println("An error occurred while getting file " + file.getName() + ".");
+				update(genNotFoundBufIMG());
+			}
+		} else {
+			update(genNotFoundBufIMG());
+			System.out.println("File " + file.getName() + " not found.");
 		}
 	}
 	
@@ -195,5 +226,18 @@ public class Texture {
 	 */
 	public Vector2f getSize() {
 		return new Vector2f(getWidth(), getHeight());
+	}
+	
+	@Override
+	public void finalize() {
+		release();
+		System.err.println("TEXTURE WITH ID " + id + " NOT RELEASED!!!!!");
+	}
+	
+	/**
+	 * call this when done with texture
+	 */
+	public void release() {
+        GL11.glDeleteTextures(id);
 	}
 }
