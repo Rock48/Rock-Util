@@ -80,7 +80,6 @@ public class Texture {
 	 */
 	public Texture(BufferedImage bufferedImage, boolean filter) {
         id = glGenTextures();
-        buf = bufferedImage;
 		update(bufferedImage, filter);
 	} 
 	
@@ -89,6 +88,7 @@ public class Texture {
 	 * @param bufferedImage the image to update the texture with
 	 */
 	public void update(BufferedImage bufferedImage, boolean filter) {
+        buf = bufferedImage;
 		int[] pixels = new int[bufferedImage.getWidth() * bufferedImage.getHeight()];
         bufferedImage.getRGB(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), pixels, 0, bufferedImage.getWidth());
  
