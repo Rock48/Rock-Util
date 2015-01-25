@@ -1,6 +1,7 @@
 package info.rockscode.util;
 
 import static org.lwjgl.opengl.GL11.GL_LINEAR;
+import static org.lwjgl.opengl.GL11.GL_NEAREST;
 import static org.lwjgl.opengl.GL11.GL_RGBA;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
@@ -71,21 +72,23 @@ public class Texture {
 	/** The current texture image */
 	private BufferedImage buf;
 	
+	private boolean isFiltered;
+	
 	/**
 	 * Create a new texture using a bufferedImage
 	 * @param bufferedImage
 	 */
-	public Texture(BufferedImage bufferedImage) {
+	public Texture(BufferedImage bufferedImage, boolean filter) {
         id = glGenTextures();
         buf = bufferedImage;
-		update(bufferedImage);
+		update(bufferedImage, filter);
 	} 
 	
 	/**
 	 * Update the contents of the texture
 	 * @param bufferedImage the image to update the texture with
 	 */
-	public void update(BufferedImage bufferedImage) {
+	public void update(BufferedImage bufferedImage, boolean filter) {
 		int[] pixels = new int[bufferedImage.getWidth() * bufferedImage.getHeight()];
         bufferedImage.getRGB(0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), pixels, 0, bufferedImage.getWidth());
  
@@ -107,31 +110,61 @@ public class Texture {
         
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        if(filter) {
+	        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        } else {
+	        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        }
+        
+		isFiltered = filter;
         
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bufferedImage.getWidth(), bufferedImage.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         
         glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	
+	public void setFiltered(boolean filtered) {
+		if(filtered != isFiltered) {
+			glBindTexture(GL_TEXTURE_2D, id);
+			if(filtered) {
+		        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	        } else {
+		        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	        }
+			glBindTexture(GL_TEXTURE_2D, 0);
+			isFiltered = filtered;
+		}
+	}
+	
+	public void enableFiltering() {
+		setFiltered(true);
+	}
+	
+	public void disableFiltering() {
+		setFiltered(false);
+	}
+	
 	/**
 	 * Creates a texture given file inside jar
 	 * @param name
 	 */
-	public Texture(String name) {
+	public Texture(String name, boolean filter) {
 		id = glGenTextures();
-		update(name);
+		update(name, filter);
 	}
 	
 	/**
 	 * Creates a texture using given file
 	 * @param file
 	 */
-	public Texture(File file) {
+	public Texture(File file, boolean filter) {
 		id = glGenTextures();
-		update(file);
+		update(file, filter);
 	}
 	
 	/**
@@ -146,14 +179,14 @@ public class Texture {
 	 * Update the texture from a file inside the jar
 	 * @param name of file
 	 */
-	public void update(String name) {
+	public void update(String name, boolean filter) {
 		try {
 			BufferedImage in = ImageIO.read(Texture.class.getClassLoader().getResourceAsStream(name));
 	        buf = in;
-			update(in);
+			update(in, filter);
 		} catch (IOException | IllegalArgumentException e) {
 			System.out.println("File " + name + " not found, or an error occurred");
-			update(genNotFoundBufIMG());
+			update(genNotFoundBufIMG(), false);
 		}
 	}
 	
@@ -161,18 +194,18 @@ public class Texture {
 	 * Update the texture from a file not inside the jar
 	 * @param file image file
 	 */
-	public void update(File file) {
+	public void update(File file, boolean filter) {
 		if(file.exists()) {
 			try {
 				BufferedImage in = ImageIO.read(file);
 		        buf = in;
-				update(in);
+				update(in, filter);
 			} catch (IOException | IllegalArgumentException e) {
 				System.out.println("An error occurred while getting file " + file.getName() + ".");
-				update(genNotFoundBufIMG());
+				update(genNotFoundBufIMG(), filter);
 			}
 		} else {
-			update(genNotFoundBufIMG());
+			update(genNotFoundBufIMG(), false);
 			System.out.println("File " + file.getName() + " not found.");
 		}
 	}

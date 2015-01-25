@@ -63,7 +63,7 @@ public class GLText {
 		metrics = graphics.getFontMetrics(font);
 		this.font = font;
 		this.str = str;
-		this.tex = new Texture(getImage());
+		this.tex = new Texture(getImage(), false);
 	}
 	
 	/**
@@ -119,7 +119,7 @@ public class GLText {
 	 * Updates the texture of the string, you shouldn't need to call this
 	 */
 	public void updateTexture() {
-		tex.update(getImage());
+		tex.update(getImage(), false);
 	}
 	
 	/**
